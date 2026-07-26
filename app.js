@@ -75,6 +75,7 @@ const topics = [
 ];
 
 const screens = {
+  home: document.getElementById("homeScreen"),
   settings: document.getElementById("settingsScreen"),
   question: document.getElementById("questionScreen"),
   result: document.getElementById("resultScreen")
@@ -144,10 +145,16 @@ function renderGradingList() {
     const wrapper = document.createElement("article");
     wrapper.className = "grading-item";
     wrapper.innerHTML = `
-      <h4 class="outline-title">${item.outline}</h4>
-      ${showBody ? `<p class="model-body">${item.body}</p>` : ""}
-      ${scoreRow(item.id, "outline", "목차")}
-      ${showBody ? scoreRow(item.id, "body", "줄글") : ""}
+      <div class="grading-line outline-line">
+        <h4 class="outline-title">${item.outline}</h4>
+        ${scoreRow(item.id, "outline", "목차")}
+      </div>
+      ${showBody ? `
+        <div class="grading-line body-line">
+          <p class="model-body">${item.body}</p>
+          ${scoreRow(item.id, "body", "줄글")}
+        </div>
+      ` : ""}
     `;
     list.appendChild(wrapper);
   });
@@ -165,10 +172,12 @@ function scoreRow(itemId, type, label) {
   return `
     <div class="score-row" data-row="${itemId}-${type}">
       <div class="score-label">${label}</div>
-      <button class="score-button correct" type="button"
-        data-item="${itemId}" data-type="${type}" data-value="true">O 맞음</button>
-      <button class="score-button wrong" type="button"
-        data-item="${itemId}" data-type="${type}" data-value="false">X 틀림</button>
+      <div class="score-actions">
+        <button class="score-button correct" type="button"
+          data-item="${itemId}" data-type="${type}" data-value="true">O</button>
+        <button class="score-button wrong" type="button"
+          data-item="${itemId}" data-type="${type}" data-value="false">X</button>
+      </div>
     </div>
   `;
 }
@@ -263,10 +272,11 @@ function nextTopic() {
   loadTopic(next);
 }
 
+document.getElementById("goSettingsBtn").addEventListener("click", () => showScreen("settings"));
 document.getElementById("startBtn").addEventListener("click", startTest);
 document.getElementById("revealBtn").addEventListener("click", openAnswerPanel);
 document.getElementById("closeAnswerBtn").addEventListener("click", closeAnswerPanel);
 document.getElementById("completeBtn").addEventListener("click", completeGrading);
 document.getElementById("nextBtn").addEventListener("click", nextTopic);
 document.getElementById("backSettingsBtn").addEventListener("click", () => showScreen("settings"));
-document.getElementById("homeBtn").addEventListener("click", () => showScreen("settings"));
+document.getElementById("homeBtn").addEventListener("click", () => showScreen("home"));
