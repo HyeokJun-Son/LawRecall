@@ -1,178 +1,109 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Law Recall</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Law Recall v0.5</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="app-shell">
-    <section id="home-screen" class="screen active">
-      <div class="hero-card">
-        <p class="eyebrow">LAW RECALL</p>
-        <h1>법규 암기 테스트</h1>
-        <p class="subtitle">논점을 직접 작성하고, 정답과 비교하며 반복 학습합니다.</p>
-        <button id="start-button" class="primary-button">시험 시작</button>
-        <p class="version">Prototype v0.4</p>
+    <header class="topbar">
+      <div>
+        <h1>Law Recall</h1>
+        <p class="version">Prototype v0.5 · O/X 채점 UI</p>
       </div>
-    </section>
+      <button id="homeBtn" class="ghost-button" type="button">처음으로</button>
+    </header>
 
-    <section id="settings-screen" class="screen">
-      <div class="panel">
-        <div class="screen-header">
-          <button id="settings-back-button" class="text-button">← 홈</button>
-          <div>
-            <p class="eyebrow">TEST SETTINGS</p>
-            <h2>시험 설정</h2>
+    <section id="settingsScreen" class="screen active">
+      <div class="card">
+        <h2>테스트 설정</h2>
+
+        <div class="setting-block">
+          <h3>과목</h3>
+          <div class="option-grid" id="subjectOptions">
+            <label><input type="checkbox" value="행정법" checked><span>행정법</span></label>
+            <label><input type="checkbox" value="토지보상법"><span>토지보상법</span></label>
+            <label><input type="checkbox" value="부동산공시법"><span>부동산공시법</span></label>
+            <label><input type="checkbox" value="감정평가법"><span>감정평가법</span></label>
           </div>
         </div>
 
-        <form id="settings-form">
-          <fieldset>
-            <legend>과목 <span>복수 선택</span></legend>
-            <div class="option-grid">
-              <label class="option-card">
-                <input type="checkbox" name="subject" value="행정법" checked />
-                <span>행정법</span>
-              </label>
-              <label class="option-card">
-                <input type="checkbox" name="subject" value="토지보상법" />
-                <span>토지보상법</span>
-              </label>
-              <label class="option-card">
-                <input type="checkbox" name="subject" value="부동산공시법" />
-                <span>부동산공시법</span>
-              </label>
-              <label class="option-card">
-                <input type="checkbox" name="subject" value="감정평가법" />
-                <span>감정평가법</span>
-              </label>
-            </div>
-          </fieldset>
+        <div class="setting-block">
+          <h3>등급</h3>
+          <div class="option-grid compact" id="gradeOptions">
+            <label><input type="checkbox" value="A" checked><span>A</span></label>
+            <label><input type="checkbox" value="B" checked><span>B</span></label>
+            <label><input type="checkbox" value="C"><span>C</span></label>
+            <label><input type="checkbox" value="D"><span>D</span></label>
+          </div>
+        </div>
 
-          <fieldset>
-            <legend>등급 <span>복수 선택</span></legend>
-            <div class="option-grid grade-grid">
-              <label class="option-card grade-a">
-                <input type="checkbox" name="grade" value="A" checked />
-                <span>A · 빈출</span>
-              </label>
-              <label class="option-card grade-b">
-                <input type="checkbox" name="grade" value="B" />
-                <span>B · 출제</span>
-              </label>
-              <label class="option-card grade-c">
-                <input type="checkbox" name="grade" value="C" />
-                <span>C · 출제 가능</span>
-              </label>
-              <label class="option-card grade-d">
-                <input type="checkbox" name="grade" value="D" />
-                <span>D · 불의타</span>
-              </label>
-            </div>
-          </fieldset>
+        <div class="setting-block">
+          <h3>테스트 범위</h3>
+          <div class="option-grid range-grid">
+            <label><input type="radio" name="range" value="목차 전체"><span>목차 전체</span></label>
+            <label><input type="radio" name="range" value="모든 내용" checked><span>모든 내용</span></label>
+          </div>
+        </div>
 
-          <fieldset>
-            <legend>시험범위 <span>하나 선택</span></legend>
-            <div class="range-options">
-              <label class="option-card">
-                <input type="radio" name="range" value="목차 전체" checked />
-                <span>
-                  <strong>목차 전체</strong>
-                  <small>해당 논점의 마지막 목차 수준까지</small>
-                </span>
-              </label>
-              <label class="option-card">
-                <input type="radio" name="range" value="모든 내용" />
-                <span>
-                  <strong>모든 내용</strong>
-                  <small>목차 전체 + 줄글까지</small>
-                </span>
-              </label>
-            </div>
-          </fieldset>
-
-          <p id="settings-error" class="error-message" aria-live="polite"></p>
-
-          <button type="submit" class="primary-button full-width">시험 시작</button>
-        </form>
+        <p id="settingsError" class="error-text" aria-live="polite"></p>
+        <button id="startBtn" class="primary-button large" type="button">테스트 시작</button>
       </div>
     </section>
 
-    <section id="question-screen" class="screen">
-      <div class="question-layout">
-        <aside class="question-meta">
-          <button id="question-back-button" class="text-button">← 설정</button>
+    <section id="questionScreen" class="screen">
+      <div class="topic-header card">
+        <div class="topic-meta">
+          <span id="subjectBadge" class="badge"></span>
+          <span id="gradeBadge" class="badge muted"></span>
+          <span id="rangeBadge" class="badge muted"></span>
+        </div>
+        <p id="chapterText" class="chapter-text"></p>
+        <h2><span id="topicNumber"></span> <span id="topicTitle"></span></h2>
+      </div>
 
-          <div class="topic-badge-row">
-            <span id="topic-grade" class="grade-badge">A</span>
-            <span id="topic-subject" class="subject-badge">행정법</span>
+      <div class="answer-layout" id="answerLayout">
+        <section class="writing-panel card">
+          <div class="panel-title-row">
+            <h3>내 답안</h3>
+            <span class="helper">답안은 저장되지 않습니다.</span>
+          </div>
+          <textarea id="userAnswer" placeholder="답안을 작성하세요"></textarea>
+          <button id="revealBtn" class="primary-button" type="button">정답 보기</button>
+        </section>
+
+        <aside id="modelPanel" class="model-panel card" aria-hidden="true">
+          <div class="panel-title-row sticky">
+            <div>
+              <h3>정답 및 채점</h3>
+              <p class="helper">각 목차와 줄글을 각각 O/X로 채점하세요.</p>
+            </div>
+            <button id="closeAnswerBtn" class="icon-button" type="button" aria-label="정답 닫기">닫기</button>
           </div>
 
-          <p id="topic-number" class="topic-number">8-2</p>
-          <h2 id="topic-title">대집행</h2>
-          <p id="topic-chapter" class="chapter-name">8장 행정의 실효성 확보수단</p>
+          <div id="gradingList" class="grading-list"></div>
 
-          <div class="range-card">
-            <span>시험범위</span>
-            <strong id="selected-range">목차 전체</strong>
-            <small id="range-description">마지막 목차 수준까지 작성</small>
-          </div>
-
-          <div class="progress-card">
-            <span>현재 진행</span>
-            <strong>1 / 1</strong>
-            <small>임시 데이터 기준</small>
+          <div class="grading-footer">
+            <p id="gradingStatus" class="grading-status">모든 항목을 채점하면 완료할 수 있습니다.</p>
+            <button id="completeBtn" class="primary-button large" type="button" disabled>채점 완료</button>
           </div>
         </aside>
-
-        <section class="answer-workspace">
-          <section class="answer-area">
-            <div class="answer-header">
-              <div>
-                <p class="eyebrow">WRITE YOUR ANSWER</p>
-                <h3>답안을 작성하세요</h3>
-              </div>
-              <button id="new-topic-button" class="secondary-button">다른 논점</button>
-            </div>
-
-            <textarea
-              id="answer-input"
-              placeholder="여기에 답안을 작성하세요."
-              spellcheck="false"
-            ></textarea>
-
-            <div class="answer-actions">
-              <p>작성한 답안은 저장되지 않습니다.</p>
-              <button id="show-answer-button" class="primary-button">정답 보기</button>
-            </div>
-          </section>
-
-          <aside id="model-answer-panel" class="model-answer-panel" aria-hidden="true">
-            <div class="model-answer-header">
-              <div>
-                <p class="eyebrow">MODEL ANSWER</p>
-                <h3>정답</h3>
-              </div>
-              <button id="close-answer-button" class="text-button close-button">닫기 ✕</button>
-            </div>
-
-            <div class="model-answer-topic">
-              <span id="answer-topic-number">8-2</span>
-              <strong id="answer-topic-title">대집행</strong>
-            </div>
-
-            <div id="model-answer-content" class="model-answer-content"></div>
-
-            <div class="model-answer-footer">
-              <p>다음 버전에서 각 목차와 줄글에 O/X 체크 기능을 추가합니다.</p>
-            </div>
-          </aside>
-        </section>
       </div>
     </section>
 
+    <section id="resultScreen" class="screen">
+      <div class="card result-card">
+        <h2>채점 완료</h2>
+        <div id="resultSummary" class="result-summary"></div>
+        <p class="helper center">v0.5에서는 화면 동작만 확인하며, 채점 기록은 아직 저장하지 않습니다.</p>
+        <div class="result-actions">
+          <button id="nextBtn" class="primary-button large" type="button">다음 논점</button>
+          <button id="backSettingsBtn" class="secondary-button large" type="button">설정으로</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script src="app.js"></script>
