@@ -78,6 +78,8 @@ const screens = {
   home: document.getElementById("homeScreen"),
   settings: document.getElementById("settingsScreen"),
   question: document.getElementById("questionScreen"),
+  history: document.getElementById("historyScreen"),
+  historyDetail: document.getElementById("historyDetailScreen"),
   result: document.getElementById("resultScreen")
 };
 
@@ -256,6 +258,161 @@ function updateStoredCount() {
   if (element) element.textContent = `저장된 채점 기록 ${count}회`;
 }
 
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function formatTestedAt(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "날짜 정보 없음";
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(date);
+}
+
+function summarizeRecord(record) {
+  const items = Array.isArray(record.items) ? record.items : [];
+  let outlineO = 0;
+  let outlineX = 0;
+  let bodyO = 0;
+  let bodyX = 0;
+
+  items.forEach(item => {
+    if (item.outlineCorrect === true) outlineO += 1;
+    if (item.outlineCorrect === false) outlineX += 1;
+    if (item.bodyCorrect === true) bodyO += 1;
+    if (item.bodyCorrect === false) bodyX += 1;
+  });
+
+  return { outlineO, outlineX, bodyO, bodyX };
+}
+
+function openHistory() {
+  renderHistoryList();
+  showScreen("history");
+}
+
+function renderHistoryList() {
+  const list = document.getElementById("historyList");
+  const records = [...getSavedRecords()].sort((a, b) =>
+    new Date(b.testedAt).getTime() - new Date(a.testedAt).getTime()
+  );
+
+  if (!records.length) {
+    list.innerHTML = `
+      <div class="card empty-history">
+        <h3>아직 저장된 기록이 없습니다.</h3>
+        <p class="helper">시험을 완료하면 이곳에서 결과를 확인할 수 있습니다.</p>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = records.map(record => {
+    const summary = summarizeRecord(record);
+    const topic = record.topic || {};
+    const hasBody = record.range === "모든 내용" || summary.bodyO + summary.bodyX > 0;
+
+    return `
+      <article class="card history-card" data-record-id="${escapeHtml(record.id)}">
+        <div class="history-card-top">
+          <time>${escapeHtml(formatTestedAt(record.testedAt))}</time>
+          <span class="badge muted">${escapeHtml(record.range || "범위 정보 없음")}</span>
+        </div>
+        <p class="history-subject">${escapeHtml(topic.subject || "과목 정보 없음")} · ${escapeHtml(topic.grade ? `${topic.grade}급` : "등급 정보 없음")}</p>
+        <h3>${escapeHtml(topic.number || "")} ${escapeHtml(topic.title || "논점 정보 없음")}</h3>
+        <p class="history-chapter">${escapeHtml(topic.chapter || "")}</p>
+        <div class="history-score-grid">
+          <div><span>목차</span><strong>O ${summary.outlineO} / X ${summary.outlineX}</strong></div>
+          ${hasBody ? `<div><span>줄글</span><strong>O ${summary.bodyO} / X ${summary.bodyX}</strong></div>` : ""}
+        </div>
+        <div class="history-card-actions">
+          <button class="secondary-button history-detail-btn" type="button" data-record-id="${escapeHtml(record.id)}">상세보기</button>
+          <button class="delete-button history-delete-btn" type="button" data-record-id="${escapeHtml(record.id)}">삭제</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  list.querySelectorAll(".history-detail-btn").forEach(button => {
+    button.addEventListener("click", () => openHistoryDetail(button.dataset.recordId));
+  });
+
+  list.querySelectorAll(".history-delete-btn").forEach(button => {
+    button.addEventListener("click", () => deleteHistoryRecord(button.dataset.recordId));
+  });
+}
+
+function openHistoryDetail(recordId) {
+  const record = getSavedRecords().find(item => item.id === recordId);
+  if (!record) {
+    renderHistoryList();
+    showScreen("history");
+    return;
+  }
+
+  const topic = record.topic || {};
+  document.getElementById("detailTitle").textContent = `${topic.number || ""} ${topic.title || "학습 기록"}`.trim();
+  document.getElementById("detailMeta").textContent = [
+    formatTestedAt(record.testedAt),
+    topic.subject,
+    topic.grade ? `${topic.grade}급` : "",
+    record.range
+  ].filter(Boolean).join(" · ");
+
+  const detail = document.getElementById("historyDetail");
+  const items = Array.isArray(record.items) ? record.items : [];
+  detail.innerHTML = `
+    ${topic.chapter ? `<p class="detail-chapter">${escapeHtml(topic.chapter)}</p>` : ""}
+    <div class="detail-items">
+      ${items.map(item => `
+        <article class="detail-item">
+          <h3>${escapeHtml(item.outlineText || "목차 정보 없음")}</h3>
+          <div class="detail-grade-row">
+            <span>목차</span>
+            <strong class="grade-pill ${item.outlineCorrect ? "grade-o" : "grade-x"}">${item.outlineCorrect ? "O" : "X"}</strong>
+          </div>
+          ${typeof item.bodyCorrect === "boolean" ? `
+            <div class="detail-grade-row">
+              <span>줄글</span>
+              <strong class="grade-pill ${item.bodyCorrect ? "grade-o" : "grade-x"}">${item.bodyCorrect ? "O" : "X"}</strong>
+            </div>
+          ` : ""}
+        </article>
+      `).join("")}
+    </div>
+  `;
+  showScreen("historyDetail");
+}
+
+function deleteHistoryRecord(recordId) {
+  const record = getSavedRecords().find(item => item.id === recordId);
+  const topic = record?.topic || {};
+  const label = `${topic.number || ""} ${topic.title || "이 기록"}`.trim();
+  if (!window.confirm(`${label}의 학습 기록을 삭제할까요?`)) return;
+
+  try {
+    const remaining = getSavedRecords().filter(item => item.id !== recordId);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+    updateStoredCount();
+    renderHistoryList();
+  } catch (error) {
+    console.error("학습 기록을 삭제하지 못했습니다.", error);
+    window.alert("기록을 삭제하지 못했습니다.");
+  }
+}
+
 function buildGradingRecord() {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -339,6 +496,9 @@ function nextTopic() {
 }
 
 document.getElementById("goSettingsBtn").addEventListener("click", () => showScreen("settings"));
+document.getElementById("historyBtn").addEventListener("click", openHistory);
+document.getElementById("historyBackBtn").addEventListener("click", () => showScreen("home"));
+document.getElementById("detailBackBtn").addEventListener("click", openHistory);
 document.getElementById("startBtn").addEventListener("click", startTest);
 document.getElementById("revealBtn").addEventListener("click", openAnswerPanel);
 document.getElementById("closeAnswerBtn").addEventListener("click", closeAnswerPanel);
