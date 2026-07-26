@@ -1,83 +1,172 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f3f4f6">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Law Recall</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="app-shell">
-
-    <section id="homeScreen" class="screen active">
-      <div class="card home-card">
-        <div class="book-icon" aria-hidden="true">📚</div>
-        <h1>Law Recall</h1>
-        <p class="subtitle">법규 답안 암기 Prototype</p>
-
-        <button id="goSettingsBtn" class="primary-btn">시험 시작</button>
-        <small>Prototype v0.2</small>
+    <section id="home-screen" class="screen active">
+      <div class="hero-card">
+        <p class="eyebrow">LAW RECALL</p>
+        <h1>법규 암기 테스트</h1>
+        <p class="subtitle">논점을 직접 작성하고, 정답과 비교하며 반복 학습합니다.</p>
+        <button id="start-button" class="primary-button">시험 시작</button>
+        <p class="version">Prototype v0.3</p>
       </div>
     </section>
 
-    <section id="settingsScreen" class="screen">
-      <div class="card settings-card">
-        <header class="screen-header">
-          <button id="backBtn" class="icon-btn" aria-label="뒤로 가기">←</button>
+    <section id="settings-screen" class="screen">
+      <div class="panel">
+        <div class="screen-header">
+          <button id="settings-back-button" class="text-button">← 홈</button>
           <div>
+            <p class="eyebrow">TEST SETTINGS</p>
             <h2>시험 설정</h2>
-            <p>시험할 범위를 선택하세요.</p>
           </div>
-        </header>
+        </div>
 
-        <form id="testForm">
+        <form id="settings-form">
           <fieldset>
-            <legend>과목</legend>
-            <div class="choice-grid subject-grid">
-              <label><input type="radio" name="subject" value="행정법" checked><span>행정법</span></label>
-              <label><input type="radio" name="subject" value="토지보상법"><span>토지보상법</span></label>
-              <label><input type="radio" name="subject" value="부동산공시법"><span>부동산공시법</span></label>
-              <label><input type="radio" name="subject" value="감정평가법"><span>감정평가법</span></label>
+            <legend>과목 <span>복수 선택</span></legend>
+            <div class="option-grid">
+              <label class="option-card">
+                <input type="checkbox" name="subject" value="행정법" checked />
+                <span>행정법</span>
+              </label>
+              <label class="option-card">
+                <input type="checkbox" name="subject" value="토지보상법" />
+                <span>토지보상법</span>
+              </label>
+              <label class="option-card">
+                <input type="checkbox" name="subject" value="부동산공시법" />
+                <span>부동산공시법</span>
+              </label>
+              <label class="option-card">
+                <input type="checkbox" name="subject" value="감정평가법" />
+                <span>감정평가법</span>
+              </label>
             </div>
           </fieldset>
 
           <fieldset>
-            <legend>논점 등급</legend>
-            <div class="choice-grid grade-grid">
-              <label><input type="checkbox" name="grade" value="A" checked><span>A</span></label>
-              <label><input type="checkbox" name="grade" value="B" checked><span>B</span></label>
-              <label><input type="checkbox" name="grade" value="C"><span>C</span></label>
-              <label><input type="checkbox" name="grade" value="D"><span>D</span></label>
+            <legend>등급 <span>복수 선택</span></legend>
+            <div class="option-grid grade-grid">
+              <label class="option-card grade-a">
+                <input type="checkbox" name="grade" value="A" checked />
+                <span>A · 빈출</span>
+              </label>
+              <label class="option-card grade-b">
+                <input type="checkbox" name="grade" value="B" />
+                <span>B · 출제</span>
+              </label>
+              <label class="option-card grade-c">
+                <input type="checkbox" name="grade" value="C" />
+                <span>C · 출제 가능</span>
+              </label>
+              <label class="option-card grade-d">
+                <input type="checkbox" name="grade" value="D" />
+                <span>D · 불의타</span>
+              </label>
             </div>
           </fieldset>
 
           <fieldset>
-            <legend>시험 범위</legend>
-            <div class="choice-grid range-grid">
-              <label><input type="radio" name="range" value="1수준" checked><span>1수준</span></label>
-              <label><input type="radio" name="range" value="2수준"><span>2수준</span></label>
-              <label><input type="radio" name="range" value="3수준"><span>3수준</span></label>
-              <label><input type="radio" name="range" value="4수준"><span>4수준</span></label>
-              <label class="wide"><input type="radio" name="range" value="모든 내용"><span>모든 내용 · 줄글 포함</span></label>
+            <legend>시험범위 <span>하나 선택</span></legend>
+            <div class="range-options">
+              <label class="option-card">
+                <input type="radio" name="range" value="목차 전체" checked />
+                <span>
+                  <strong>목차 전체</strong>
+                  <small>해당 논점의 마지막 목차 수준까지</small>
+                </span>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="range" value="모든 내용" />
+                <span>
+                  <strong>모든 내용</strong>
+                  <small>목차 전체 + 줄글까지</small>
+                </span>
+              </label>
             </div>
           </fieldset>
 
-          <button type="submit" class="primary-btn start-test-btn">설정 완료</button>
+          <p id="settings-error" class="error-message" aria-live="polite"></p>
+
+          <button type="submit" class="primary-button full-width">시험 시작</button>
         </form>
       </div>
     </section>
 
-    <section id="previewScreen" class="screen">
-      <div class="card preview-card">
-        <div class="success-icon">✓</div>
-        <h2>시험 설정 완료</h2>
-        <p id="summaryText"></p>
-        <button id="editSettingsBtn" class="secondary-btn">설정 다시 선택</button>
-        <button id="nextStepBtn" class="primary-btn">다음 단계 준비 중</button>
+    <section id="question-screen" class="screen">
+      <div class="question-layout">
+        <aside class="question-meta">
+          <button id="question-back-button" class="text-button">← 설정</button>
+
+          <div class="topic-badge-row">
+            <span id="topic-grade" class="grade-badge">A</span>
+            <span id="topic-subject" class="subject-badge">행정법</span>
+          </div>
+
+          <p id="topic-number" class="topic-number">8-2</p>
+          <h2 id="topic-title">대집행</h2>
+          <p id="topic-chapter" class="chapter-name">8장 행정의 실효성 확보수단</p>
+
+          <div class="range-card">
+            <span>시험범위</span>
+            <strong id="selected-range">목차 전체</strong>
+            <small id="range-description">마지막 목차 수준까지 작성</small>
+          </div>
+
+          <div class="progress-card">
+            <span>현재 진행</span>
+            <strong>1 / 1</strong>
+            <small>임시 데이터 기준</small>
+          </div>
+        </aside>
+
+        <section class="answer-area">
+          <div class="answer-header">
+            <div>
+              <p class="eyebrow">WRITE YOUR ANSWER</p>
+              <h3>답안을 작성하세요</h3>
+            </div>
+            <button id="new-topic-button" class="secondary-button">다른 논점</button>
+          </div>
+
+          <textarea
+            id="answer-input"
+            placeholder="여기에 답안을 작성하세요."
+            spellcheck="false"
+          ></textarea>
+
+          <div class="answer-actions">
+            <p>작성한 답안은 저장되지 않습니다.</p>
+            <button id="show-answer-button" class="primary-button">정답 보기</button>
+          </div>
+        </section>
       </div>
     </section>
 
+    <section id="answer-preview-screen" class="screen">
+      <div class="panel compact-panel">
+        <p class="eyebrow">NEXT STEP</p>
+        <h2>정답 비교 화면</h2>
+        <p class="placeholder-copy">
+          문제 화면까지 정상적으로 연결되었습니다.<br />
+          다음 버전에서 정답 팝업과 목차·줄글 O/X 체크 기능을 추가합니다.
+        </p>
+
+        <div class="summary-box">
+          <span id="preview-topic"></span>
+          <strong id="preview-range"></strong>
+        </div>
+
+        <button id="return-question-button" class="primary-button full-width">문제 화면으로 돌아가기</button>
+      </div>
+    </section>
   </main>
 
   <script src="app.js"></script>
