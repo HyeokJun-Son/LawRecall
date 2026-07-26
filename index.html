@@ -14,7 +14,7 @@
         <h1>법규 암기 테스트</h1>
         <p class="subtitle">논점을 직접 작성하고, 정답과 비교하며 반복 학습합니다.</p>
         <button id="start-button" class="primary-button">시험 시작</button>
-        <p class="version">Prototype v0.3</p>
+        <p class="version">Prototype v0.4</p>
       </div>
     </section>
 
@@ -127,46 +127,52 @@
           </div>
         </aside>
 
-        <section class="answer-area">
-          <div class="answer-header">
-            <div>
-              <p class="eyebrow">WRITE YOUR ANSWER</p>
-              <h3>답안을 작성하세요</h3>
+        <section class="answer-workspace">
+          <section class="answer-area">
+            <div class="answer-header">
+              <div>
+                <p class="eyebrow">WRITE YOUR ANSWER</p>
+                <h3>답안을 작성하세요</h3>
+              </div>
+              <button id="new-topic-button" class="secondary-button">다른 논점</button>
             </div>
-            <button id="new-topic-button" class="secondary-button">다른 논점</button>
-          </div>
 
-          <textarea
-            id="answer-input"
-            placeholder="여기에 답안을 작성하세요."
-            spellcheck="false"
-          ></textarea>
+            <textarea
+              id="answer-input"
+              placeholder="여기에 답안을 작성하세요."
+              spellcheck="false"
+            ></textarea>
 
-          <div class="answer-actions">
-            <p>작성한 답안은 저장되지 않습니다.</p>
-            <button id="show-answer-button" class="primary-button">정답 보기</button>
-          </div>
+            <div class="answer-actions">
+              <p>작성한 답안은 저장되지 않습니다.</p>
+              <button id="show-answer-button" class="primary-button">정답 보기</button>
+            </div>
+          </section>
+
+          <aside id="model-answer-panel" class="model-answer-panel" aria-hidden="true">
+            <div class="model-answer-header">
+              <div>
+                <p class="eyebrow">MODEL ANSWER</p>
+                <h3>정답</h3>
+              </div>
+              <button id="close-answer-button" class="text-button close-button">닫기 ✕</button>
+            </div>
+
+            <div class="model-answer-topic">
+              <span id="answer-topic-number">8-2</span>
+              <strong id="answer-topic-title">대집행</strong>
+            </div>
+
+            <div id="model-answer-content" class="model-answer-content"></div>
+
+            <div class="model-answer-footer">
+              <p>다음 버전에서 각 목차와 줄글에 O/X 체크 기능을 추가합니다.</p>
+            </div>
+          </aside>
         </section>
       </div>
     </section>
 
-    <section id="answer-preview-screen" class="screen">
-      <div class="panel compact-panel">
-        <p class="eyebrow">NEXT STEP</p>
-        <h2>정답 비교 화면</h2>
-        <p class="placeholder-copy">
-          문제 화면까지 정상적으로 연결되었습니다.<br />
-          다음 버전에서 정답 팝업과 목차·줄글 O/X 체크 기능을 추가합니다.
-        </p>
-
-        <div class="summary-box">
-          <span id="preview-topic"></span>
-          <strong id="preview-range"></strong>
-        </div>
-
-        <button id="return-question-button" class="primary-button full-width">문제 화면으로 돌아가기</button>
-      </div>
-    </section>
   </main>
 
   <script src="app.js"></script>
