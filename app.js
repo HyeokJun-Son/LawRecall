@@ -295,7 +295,11 @@ function summarizeRecord(record) {
     if (item.bodyCorrect === false) bodyX += 1;
   });
 
-  return { outlineO, outlineX, bodyO, bodyX };
+  const correctCount = outlineO + bodyO;
+  const gradedCount = outlineO + outlineX + bodyO + bodyX;
+  const accuracy = gradedCount > 0 ? Math.floor((correctCount / gradedCount) * 100) : 0;
+
+  return { outlineO, outlineX, bodyO, bodyX, accuracy };
 }
 
 function openHistory() {
@@ -322,8 +326,6 @@ function renderHistoryList() {
   list.innerHTML = records.map(record => {
     const summary = summarizeRecord(record);
     const topic = record.topic || {};
-    const hasBody = record.range === "모든 내용" || summary.bodyO + summary.bodyX > 0;
-
     return `
       <article class="card history-card" data-record-id="${escapeHtml(record.id)}">
         <div class="history-card-top">
@@ -334,8 +336,7 @@ function renderHistoryList() {
         <h3>${escapeHtml(topic.number || "")} ${escapeHtml(topic.title || "논점 정보 없음")}</h3>
         <p class="history-chapter">${escapeHtml(topic.chapter || "")}</p>
         <div class="history-score-grid">
-          <div><span>목차</span><strong>O ${summary.outlineO} / X ${summary.outlineX}</strong></div>
-          ${hasBody ? `<div><span>줄글</span><strong>O ${summary.bodyO} / X ${summary.bodyX}</strong></div>` : ""}
+          <div><span>정답률</span><strong>${summary.accuracy}%</strong></div>
         </div>
         <div class="history-card-actions">
           <button class="secondary-button history-detail-btn" type="button" data-record-id="${escapeHtml(record.id)}">상세보기</button>
