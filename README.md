@@ -1,15 +1,8 @@
-# Law Recall v0.5.1
+# Law Recall v0.6
 
-수정 사항:
-- 링크 접속 시 홈 화면 표시
-- 홈 화면의 `시험 시작`을 눌러야 테스트 설정 화면으로 이동
-- 목차 텍스트 우측에 해당 목차 O/X
-- 줄글 텍스트 우측에 해당 줄글 O/X
-- 기존 파일명 유지: `style.css`
+- 채점 완료 시 결과를 브라우저 localStorage에 저장
+- 같은 기기·같은 브라우저에서 새로고침 후에도 유지
+- 홈 화면에 누적 저장 횟수 표시
+- 사용자가 작성한 답안은 저장하지 않음
 
-업로드 파일:
-- index.html
-- style.css
-- app.js
-
-기존 `styles.css`는 삭제 대상입니다.
+GitHub에 index.html, style.css, app.js를 덮어쓰세요.

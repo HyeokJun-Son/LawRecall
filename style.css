@@ -428,3 +428,10 @@ h1 { margin-bottom: 3px; font-size: 1.55rem; }
     min-height: 42px;
   }
 }
+
+
+/* v0.6: local grading history */
+.stored-count { margin: 16px 0 0; color: var(--muted); font-size: 0.92rem; }
+.save-message { margin: 20px 0 0; padding: 13px 15px; border-radius: 12px; text-align: center; font-weight: 700; }
+.save-message.success { background: #ecfdf3; color: #166534; border: 1px solid #bbf7d0; }
+.save-message.error { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }

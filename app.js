@@ -81,10 +81,13 @@ const screens = {
   result: document.getElementById("resultScreen")
 };
 
+const STORAGE_KEY = "lawRecallGradingRecords";
+
 const state = {
   settings: null,
   topic: null,
-  grades: {}
+  grades: {},
+  savedRecordId: null
 };
 
 function showScreen(name) {
@@ -122,6 +125,7 @@ function startTest() {
 function loadTopic(topic) {
   state.topic = topic;
   state.grades = {};
+  state.savedRecordId = null;
 
   document.getElementById("subjectBadge").textContent = topic.subject;
   document.getElementById("gradeBadge").textContent = `${topic.grade}급`;
@@ -234,6 +238,61 @@ function closeAnswerPanel() {
   panel.setAttribute("aria-hidden", "true");
 }
 
+function getSavedRecords() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const records = JSON.parse(raw);
+    return Array.isArray(records) ? records : [];
+  } catch (error) {
+    console.error("채점 기록을 불러오지 못했습니다.", error);
+    return [];
+  }
+}
+
+function updateStoredCount() {
+  const count = getSavedRecords().length;
+  const element = document.getElementById("storedCount");
+  if (element) element.textContent = `저장된 채점 기록 ${count}회`;
+}
+
+function buildGradingRecord() {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    testedAt: new Date().toISOString(),
+    topic: {
+      subject: state.topic.subject,
+      grade: state.topic.grade,
+      chapter: state.topic.chapter,
+      number: state.topic.number,
+      title: state.topic.title
+    },
+    range: state.settings.range,
+    items: state.topic.items.map(item => ({
+      itemId: item.id,
+      outlineText: item.outline,
+      outlineCorrect: state.grades[item.id].outline,
+      ...(state.settings.range === "모든 내용" ? { bodyCorrect: state.grades[item.id].body } : {})
+    }))
+  };
+}
+
+function saveCurrentGrading() {
+  if (state.savedRecordId) return { saved: true, count: getSavedRecords().length };
+  try {
+    const records = getSavedRecords();
+    const record = buildGradingRecord();
+    records.push(record);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    state.savedRecordId = record.id;
+    updateStoredCount();
+    return { saved: true, count: records.length };
+  } catch (error) {
+    console.error("채점 기록을 저장하지 못했습니다.", error);
+    return { saved: false, count: getSavedRecords().length };
+  }
+}
+
 function completeGrading() {
   if (completedCount() !== requiredCount()) return;
 
@@ -245,6 +304,7 @@ function completeGrading() {
     }
   });
 
+  const saveResult = saveCurrentGrading();
   const summary = document.getElementById("resultSummary");
   summary.innerHTML = `
     <div class="summary-box">목차 O<strong>${outlineO}</strong></div>
@@ -254,6 +314,12 @@ function completeGrading() {
       <div class="summary-box">줄글 X<strong>${bodyX}</strong></div>
     ` : ""}
   `;
+
+  const saveMessage = document.getElementById("saveMessage");
+  saveMessage.className = saveResult.saved ? "save-message success" : "save-message error";
+  saveMessage.textContent = saveResult.saved
+    ? `채점 결과가 이 기기에 저장되었습니다. 누적 ${saveResult.count}회`
+    : "채점 결과를 저장하지 못했습니다. 브라우저 저장 공간 설정을 확인하세요.";
   showScreen("result");
 }
 
@@ -280,3 +346,5 @@ document.getElementById("completeBtn").addEventListener("click", completeGrading
 document.getElementById("nextBtn").addEventListener("click", nextTopic);
 document.getElementById("backSettingsBtn").addEventListener("click", () => showScreen("settings"));
 document.getElementById("homeBtn").addEventListener("click", () => showScreen("home"));
+
+updateStoredCount();

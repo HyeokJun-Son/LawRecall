@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Law Recall v0.5</title>
+  <title>Law Recall v0.6</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="topbar">
       <div>
         <h1>Law Recall</h1>
-        <p class="version">Prototype v0.5 · O/X 채점 UI</p>
+        <p class="version">Prototype v0.6 · 채점 결과 저장</p>
       </div>
       <button id="homeBtn" class="ghost-button" type="button">처음으로</button>
     </header>
@@ -21,6 +21,7 @@
         <h2>Law Recall</h2>
         <p class="home-copy">선택한 범위에서 논점을 무작위로 출제하고, 작성 후 목차와 줄글을 직접 O/X 채점합니다.</p>
         <button id="goSettingsBtn" class="primary-button large" type="button">시험 시작</button>
+        <p id="storedCount" class="stored-count">저장된 채점 기록 0회</p>
       </div>
     </section>
 
@@ -105,7 +106,7 @@
       <div class="card result-card">
         <h2>채점 완료</h2>
         <div id="resultSummary" class="result-summary"></div>
-        <p class="helper center">v0.5.1에서는 화면 동작만 확인하며, 채점 기록은 아직 저장하지 않습니다.</p>
+        <p id="saveMessage" class="save-message" aria-live="polite"></p>
         <div class="result-actions">
           <button id="nextBtn" class="primary-button large" type="button">다음 논점</button>
           <button id="backSettingsBtn" class="secondary-button large" type="button">설정으로</button>
