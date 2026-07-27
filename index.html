@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Law Recall v0.7</title>
+  <title>Law Recall v0.8</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="topbar">
       <div>
         <h1>Law Recall</h1>
-        <p class="version">Prototype v0.7 · 학습 기록</p>
+        <p class="version">Prototype v0.8 · 논점별 통계</p>
       </div>
       <button id="homeBtn" class="ghost-button" type="button">처음으로</button>
     </header>
@@ -23,6 +23,7 @@
         <div class="home-actions">
           <button id="goSettingsBtn" class="primary-button large" type="button">시험 시작</button>
           <button id="historyBtn" class="secondary-button large" type="button">학습 기록</button>
+          <button id="statisticsBtn" class="secondary-button large" type="button">논점별 통계</button>
         </div>
         <p id="storedCount" class="stored-count">저장된 채점 기록 0회</p>
       </div>
@@ -129,6 +130,33 @@
           <button id="detailBackBtn" class="ghost-button" type="button">목록으로</button>
         </div>
         <div id="historyDetail" class="card history-detail"></div>
+      </div>
+    </section>
+
+
+    <section id="statisticsScreen" class="screen">
+      <div class="history-shell">
+        <div class="history-heading">
+          <div>
+            <h2>논점별 통계</h2>
+            <p class="helper">같은 논점의 시험 기록을 묶어 최근 성과를 보여줍니다.</p>
+          </div>
+          <button id="statisticsBackBtn" class="ghost-button" type="button">홈으로</button>
+        </div>
+        <div id="statisticsList" class="statistics-list"></div>
+      </div>
+    </section>
+
+    <section id="statisticsDetailScreen" class="screen">
+      <div class="history-shell">
+        <div class="history-heading">
+          <div>
+            <h2 id="statisticsDetailTitle">논점 통계 상세</h2>
+            <p id="statisticsDetailMeta" class="helper"></p>
+          </div>
+          <button id="statisticsDetailBackBtn" class="ghost-button" type="button">목록으로</button>
+        </div>
+        <div id="statisticsDetail" class="card statistics-detail"></div>
       </div>
     </section>
 

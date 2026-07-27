@@ -80,6 +80,8 @@ const screens = {
   question: document.getElementById("questionScreen"),
   history: document.getElementById("historyScreen"),
   historyDetail: document.getElementById("historyDetailScreen"),
+  statistics: document.getElementById("statisticsScreen"),
+  statisticsDetail: document.getElementById("statisticsDetailScreen"),
   result: document.getElementById("resultScreen")
 };
 
@@ -307,6 +309,127 @@ function openHistory() {
   showScreen("history");
 }
 
+function topicKey(record) {
+  const topic = record.topic || {};
+  return [topic.subject || "", topic.number || "", topic.title || ""].join("||");
+}
+
+function averageAccuracy(records) {
+  if (!records.length) return 0;
+  const total = records.reduce((sum, record) => sum + summarizeRecord(record).accuracy, 0);
+  return Math.floor(total / records.length);
+}
+
+function groupRecordsByTopic() {
+  const groups = new Map();
+  getSavedRecords().forEach(record => {
+    const key = topicKey(record);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(record);
+  });
+
+  return [...groups.entries()].map(([key, records]) => {
+    records.sort((a, b) => new Date(b.testedAt).getTime() - new Date(a.testedAt).getTime());
+    const latest = records[0];
+    const recentRecords = records.slice(0, 5);
+    return {
+      key,
+      topic: latest.topic || {},
+      records,
+      lastTestedAt: latest.testedAt,
+      latestAccuracy: summarizeRecord(latest).accuracy,
+      recentAccuracy: averageAccuracy(recentRecords),
+      overallAccuracy: averageAccuracy(records)
+    };
+  }).sort((a, b) => new Date(b.lastTestedAt).getTime() - new Date(a.lastTestedAt).getTime());
+}
+
+function openStatistics() {
+  renderStatisticsList();
+  showScreen("statistics");
+}
+
+function renderStatisticsList() {
+  const list = document.getElementById("statisticsList");
+  const groups = groupRecordsByTopic();
+
+  if (!groups.length) {
+    list.innerHTML = `
+      <div class="card empty-history">
+        <h3>아직 통계를 만들 기록이 없습니다.</h3>
+        <p class="helper">같은 논점을 한 번 이상 시험하면 이곳에 통계가 표시됩니다.</p>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = groups.map(group => {
+    const topic = group.topic;
+    return `
+      <article class="card statistics-card">
+        <div class="statistics-card-heading">
+          <div>
+            <p class="history-subject">${escapeHtml(topic.subject || "과목 정보 없음")} · ${escapeHtml(topic.grade ? `${topic.grade}급` : "등급 정보 없음")}</p>
+            <h3>${escapeHtml(topic.number || "")} ${escapeHtml(topic.title || "논점 정보 없음")}</h3>
+            <p class="history-chapter">${escapeHtml(topic.chapter || "")}</p>
+          </div>
+          <button class="secondary-button statistics-detail-btn" type="button" data-topic-key="${escapeHtml(group.key)}">기록 보기</button>
+        </div>
+        <div class="statistics-metrics">
+          <div><span>최근 시험</span><strong>${escapeHtml(formatTestedAt(group.lastTestedAt))}</strong></div>
+          <div><span>시험 횟수</span><strong>${group.records.length}회</strong></div>
+          <div><span>최근 정답률</span><strong>${group.recentAccuracy}%</strong><small>최근 최대 5회 평균</small></div>
+          <div><span>전체 정답률</span><strong>${group.overallAccuracy}%</strong></div>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  list.querySelectorAll(".statistics-detail-btn").forEach(button => {
+    button.addEventListener("click", () => openStatisticsDetail(button.dataset.topicKey));
+  });
+}
+
+function openStatisticsDetail(key) {
+  const group = groupRecordsByTopic().find(item => item.key === key);
+  if (!group) {
+    openStatistics();
+    return;
+  }
+
+  const topic = group.topic;
+  document.getElementById("statisticsDetailTitle").textContent = `${topic.number || ""} ${topic.title || "논점 통계"}`.trim();
+  document.getElementById("statisticsDetailMeta").textContent = [
+    topic.subject,
+    topic.grade ? `${topic.grade}급` : "",
+    topic.chapter
+  ].filter(Boolean).join(" · ");
+
+  const detail = document.getElementById("statisticsDetail");
+  detail.innerHTML = `
+    <div class="statistics-summary-grid">
+      <div><span>시험 횟수</span><strong>${group.records.length}회</strong></div>
+      <div><span>최근 정답률</span><strong>${group.recentAccuracy}%</strong></div>
+      <div><span>전체 정답률</span><strong>${group.overallAccuracy}%</strong></div>
+      <div><span>마지막 시험</span><strong>${escapeHtml(formatTestedAt(group.lastTestedAt))}</strong></div>
+    </div>
+    <div class="attempt-history">
+      <h3>시험 기록</h3>
+      ${group.records.map((record, index) => `
+        <div class="attempt-row">
+          <div>
+            <strong>${index + 1}회 전</strong>
+            <span>${escapeHtml(formatTestedAt(record.testedAt))}</span>
+          </div>
+          <span class="badge muted">${escapeHtml(record.range || "범위 정보 없음")}</span>
+          <strong class="attempt-accuracy">${summarizeRecord(record).accuracy}%</strong>
+        </div>
+      `).join("")}
+    </div>
+  `;
+  showScreen("statisticsDetail");
+}
+
 function renderHistoryList() {
   const list = document.getElementById("historyList");
   const records = [...getSavedRecords()].sort((a, b) =>
@@ -498,8 +621,11 @@ function nextTopic() {
 
 document.getElementById("goSettingsBtn").addEventListener("click", () => showScreen("settings"));
 document.getElementById("historyBtn").addEventListener("click", openHistory);
+document.getElementById("statisticsBtn").addEventListener("click", openStatistics);
 document.getElementById("historyBackBtn").addEventListener("click", () => showScreen("home"));
 document.getElementById("detailBackBtn").addEventListener("click", openHistory);
+document.getElementById("statisticsBackBtn").addEventListener("click", () => showScreen("home"));
+document.getElementById("statisticsDetailBackBtn").addEventListener("click", openStatistics);
 document.getElementById("startBtn").addEventListener("click", startTest);
 document.getElementById("revealBtn").addEventListener("click", openAnswerPanel);
 document.getElementById("closeAnswerBtn").addEventListener("click", closeAnswerPanel);
