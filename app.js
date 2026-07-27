@@ -24,7 +24,9 @@ const state = {
   settings: null,
   topic: null,
   grades: {},
-  savedRecordId: null
+  savedRecordId: null,
+  sessionTopics: [],
+  sessionIndex: 0
 };
 
 function showScreen(name) {
@@ -76,7 +78,8 @@ function currentSettingsFromForm() {
     subjects: selectedValues("subjectOptions"),
     grades: selectedValues("gradeOptions"),
     chapters: selectedValues("chapterOptions"),
-    range: document.querySelector('input[name="range"]:checked')?.value || "목차 전체"
+    range: document.querySelector('input[name="range"]:checked')?.value || "목차 전체",
+    questionCount: Math.max(1, Number.parseInt(document.getElementById("questionCount")?.value || "1", 10) || 1)
   };
 }
 
@@ -93,6 +96,36 @@ function updatePoolCount() {
   const count = settings.subjects.length && settings.grades.length && settings.chapters.length
     ? topicPool(settings).length : 0;
   document.getElementById("poolCount").textContent = `현재 조건에서 출제 가능한 논점 ${count}개`;
+  const countInput = document.getElementById("questionCount");
+  const hint = document.getElementById("countHint");
+  if (countInput) {
+    countInput.max = String(Math.max(count, 1));
+    if (count > 0 && Number(countInput.value) > count) countInput.value = String(count);
+  }
+  if (hint) hint.textContent = count > 0
+    ? `현재 조건에서는 최대 ${count}개까지 출제할 수 있습니다.`
+    : "과목·등급·단원을 선택하면 가능한 논점 수가 표시됩니다.";
+}
+
+function shuffled(items) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function updateSessionProgress() {
+  const total = state.sessionTopics.length || 1;
+  const current = Math.min(state.sessionIndex + 1, total);
+  document.getElementById("progressBadge").textContent = `${current} / ${total}`;
+}
+
+function useAllQuestionCount() {
+  const pool = topicPool(currentSettingsFromForm());
+  document.getElementById("questionCount").value = String(Math.max(pool.length, 1));
+  updatePoolCount();
 }
 
 function startTest() {
@@ -103,9 +136,17 @@ function startTest() {
   if (!settings.chapters.length) return void (error.textContent = "단원을 하나 이상 선택하세요.");
   const pool = topicPool(settings);
   if (!pool.length) return void (error.textContent = "선택한 조건에 해당하는 논점이 없습니다.");
-  error.textContent = "";
-  state.settings = settings;
-  loadTopic(pool[Math.floor(Math.random() * pool.length)]);
+  const requested = Math.max(1, settings.questionCount);
+  const actualCount = Math.min(requested, pool.length);
+  if (requested > pool.length) {
+    error.textContent = `가능한 논점이 ${pool.length}개라서 ${pool.length}개 모두 출제합니다.`;
+  } else {
+    error.textContent = "";
+  }
+  state.settings = { ...settings, questionCount: actualCount };
+  state.sessionTopics = shuffled(pool).slice(0, actualCount);
+  state.sessionIndex = 0;
+  loadTopic(state.sessionTopics[0]);
 }
 
 function topicItems(topic) {
@@ -121,6 +162,7 @@ function loadTopic(topic) {
   state.topic = { ...topic, items: topicItems(topic) };
   state.grades = {};
   state.savedRecordId = null;
+  updateSessionProgress();
   document.getElementById("subjectBadge").textContent = topic.subject;
   document.getElementById("gradeBadge").textContent = `${topic.grade}급`;
   document.getElementById("rangeBadge").textContent = state.settings.range;
@@ -489,8 +531,10 @@ function startRecommendedTopic(key) {
   const topic = group && topicByLegacyRecord(group.latest);
   if (!topic) return alert("Master DB에서 이 논점을 찾지 못했습니다.");
   state.settings = {
-    subjects: [topic.subject], grades: [topic.grade], chapters: [topic.chapter_id], range: group.latest.range || "모든 내용"
+    subjects: [topic.subject], grades: [topic.grade], chapters: [topic.chapter_id], range: group.latest.range || "모든 내용", questionCount: 1
   };
+  state.sessionTopics = [topic];
+  state.sessionIndex = 0;
   loadTopic(topic);
 }
 
@@ -548,15 +592,20 @@ function completeGrading() {
   const message = document.getElementById("saveMessage");
   message.className = saveResult.saved ? "save-message success" : "save-message error";
   message.textContent = saveResult.saved ? `채점 결과가 이 기기에 저장되었습니다. 누적 ${saveResult.count}회` : "채점 결과를 저장하지 못했습니다.";
+  const isLast = state.sessionIndex >= state.sessionTopics.length - 1;
+  document.getElementById("nextBtn").textContent = isLast ? "시험 종료" : `다음 논점 (${state.sessionIndex + 2}/${state.sessionTopics.length})`;
   showScreen("result");
 }
 
 function nextTopic() {
-  const pool = topicPool(state.settings);
-  if (!pool.length) return showScreen("settings");
-  let next = pool[Math.floor(Math.random() * pool.length)];
-  if (pool.length > 1) while (next.topic_id === state.topic.topic_id) next = pool[Math.floor(Math.random() * pool.length)];
-  loadTopic(next);
+  if (state.sessionIndex >= state.sessionTopics.length - 1) {
+    state.sessionTopics = [];
+    state.sessionIndex = 0;
+    updateStoredCount();
+    return showScreen("home");
+  }
+  state.sessionIndex += 1;
+  loadTopic(state.sessionTopics[state.sessionIndex]);
 }
 
 function toggleAllChapters() {
@@ -573,6 +622,8 @@ document.getElementById("subjectOptions").addEventListener("change", renderChapt
 document.getElementById("gradeOptions").addEventListener("change", updatePoolCount);
 document.getElementById("chapterOptions").addEventListener("change", updatePoolCount);
 document.getElementById("toggleAllChaptersBtn").addEventListener("click", toggleAllChapters);
+document.getElementById("questionCount").addEventListener("input", updatePoolCount);
+document.getElementById("useAllCountBtn").addEventListener("click", useAllQuestionCount);
 document.getElementById("goSettingsBtn").addEventListener("click", () => { renderChapterOptions(); showScreen("settings"); });
 document.getElementById("historyBtn").addEventListener("click", openHistory);
 document.getElementById("statisticsBtn").addEventListener("click", openStatistics);

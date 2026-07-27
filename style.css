@@ -874,3 +874,39 @@ h1 { margin-bottom: 3px; font-size: 1.55rem; }
   .review-detail-heading { grid-template-columns:30px minmax(0,1fr); }
   .review-detail-heading .result-pill { grid-column:2; justify-self:start; }
 }
+
+/* v1.2: 출제 논점 수 및 세션 진행 */
+.count-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 360px;
+}
+.count-input {
+  width: 130px;
+  min-height: 52px;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+.count-input:focus {
+  outline: 3px solid rgba(49, 94, 251, .15);
+  border-color: var(--primary);
+}
+.mini-button {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  color: #344054;
+  font-weight: 800;
+  cursor: pointer;
+}
+.progress-badge {
+  background: #172033;
+  color: #fff;
+}

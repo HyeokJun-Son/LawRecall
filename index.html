@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Law Recall v1.1</title>
+  <title>Law Recall v1.2</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="topbar">
       <div>
         <h1>Law Recall</h1>
-        <p class="version">v1.1 · 복습 상세 화면 시제품</p>
+        <p class="version">v1.2 · 출제 논점 수 및 세션 진행</p>
       </div>
       <button id="homeBtn" class="ghost-button" type="button">처음으로</button>
     </header>
@@ -63,6 +63,17 @@
           <p id="poolCount" class="helper pool-count"></p>
         </div>
 
+
+        <div class="setting-block">
+          <h3>출제 논점 수</h3>
+          <div class="count-setting-row">
+            <input id="questionCount" class="count-input" type="number" min="1" step="1" value="10" inputmode="numeric" aria-label="출제 논점 수">
+            <span>개</span>
+            <button id="useAllCountBtn" class="mini-button" type="button">전체</button>
+          </div>
+          <p id="countHint" class="helper">선택한 조건에서 최대 출제 가능한 수까지 설정할 수 있습니다.</p>
+        </div>
+
         <div class="setting-block">
           <h3>테스트 범위</h3>
           <div class="option-grid range-grid">
@@ -79,6 +90,7 @@
     <section id="questionScreen" class="screen">
       <div class="topic-header card">
         <div class="topic-meta">
+          <span id="progressBadge" class="badge progress-badge"></span>
           <span id="subjectBadge" class="badge"></span>
           <span id="gradeBadge" class="badge muted"></span>
           <span id="rangeBadge" class="badge muted"></span>
