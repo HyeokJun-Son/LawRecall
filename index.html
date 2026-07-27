@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Law Recall v0.9</title>
+  <title>Law Recall v1.0</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="topbar">
       <div>
         <h1>Law Recall</h1>
-        <p class="version">Prototype v0.9 · 복습 추천</p>
+        <p class="version">v1.0 · Master DB 연동</p>
       </div>
       <button id="homeBtn" class="ghost-button" type="button">처음으로</button>
     </header>
@@ -52,6 +52,15 @@
             <label><input type="checkbox" value="C"><span>C</span></label>
             <label><input type="checkbox" value="D"><span>D</span></label>
           </div>
+        </div>
+
+        <div class="setting-block">
+          <div class="setting-title-row">
+            <h3>단원</h3>
+            <button id="toggleAllChaptersBtn" class="mini-button" type="button">전체 선택</button>
+          </div>
+          <div id="chapterOptions" class="chapter-option-list"></div>
+          <p id="poolCount" class="helper pool-count"></p>
         </div>
 
         <div class="setting-block">
@@ -188,6 +197,7 @@
     </section>
   </main>
 
+  <script src="master-db.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
