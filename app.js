@@ -81,6 +81,7 @@ const screens = {
   history: document.getElementById("historyScreen"),
   historyDetail: document.getElementById("historyDetailScreen"),
   statistics: document.getElementById("statisticsScreen"),
+  review: document.getElementById("reviewScreen"),
   statisticsDetail: document.getElementById("statisticsDetailScreen"),
   result: document.getElementById("resultScreen")
 };
@@ -347,6 +348,120 @@ function groupRecordsByTopic() {
 function openStatistics() {
   renderStatisticsList();
   showScreen("statistics");
+}
+
+function daysSince(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 0;
+  const elapsed = Date.now() - date.getTime();
+  return Math.max(0, Math.floor(elapsed / 86400000));
+}
+
+function reviewPriority(group) {
+  const days = daysSince(group.lastTestedAt);
+  const accuracyNeed = 100 - group.recentAccuracy;
+  const inactivityNeed = Math.min(days, 30) * 2;
+  const lowAttemptNeed = Math.max(0, 5 - group.records.length) * 6;
+  return Math.round(accuracyNeed * 1.4 + inactivityNeed + lowAttemptNeed);
+}
+
+function reviewReason(group) {
+  const days = daysSince(group.lastTestedAt);
+  if (group.recentAccuracy < 70) return "최근 정답률이 낮아요";
+  if (days >= 14) return "2주 이상 복습하지 않았어요";
+  if (group.records.length < 3) return "시험 횟수가 아직 적어요";
+  if (group.recentAccuracy < 90) return "정답률을 더 끌어올릴 수 있어요";
+  return "기억 유지를 위한 복습 시점이에요";
+}
+
+function reviewLevel(score) {
+  if (score >= 95) return { label: "최우선", stars: "★★★★★" };
+  if (score >= 70) return { label: "높음", stars: "★★★★☆" };
+  if (score >= 45) return { label: "보통", stars: "★★★☆☆" };
+  return { label: "유지", stars: "★★☆☆☆" };
+}
+
+function getReviewGroups() {
+  return groupRecordsByTopic()
+    .map(group => ({ ...group, priority: reviewPriority(group) }))
+    .sort((a, b) => b.priority - a.priority || new Date(a.lastTestedAt) - new Date(b.lastTestedAt));
+}
+
+function openReview() {
+  renderReviewList();
+  showScreen("review");
+}
+
+function renderReviewList() {
+  const list = document.getElementById("reviewList");
+  const summary = document.getElementById("reviewSummary");
+  const groups = getReviewGroups();
+
+  if (!groups.length) {
+    summary.innerHTML = `<strong>추천을 만들 기록이 없습니다.</strong><p class="helper">시험을 완료하면 정답률과 학습 간격을 분석해 복습 논점을 추천합니다.</p>`;
+    list.innerHTML = "";
+    return;
+  }
+
+  const urgent = groups.filter(group => group.priority >= 70).length;
+  summary.innerHTML = `
+    <div><span>추천 논점</span><strong>${groups.length}개</strong></div>
+    <div><span>우선 복습</span><strong>${urgent}개</strong></div>
+    <p>점수가 높을수록 지금 복습할 필요가 큰 논점입니다.</p>
+  `;
+
+  list.innerHTML = groups.slice(0, 10).map((group, index) => {
+    const topic = group.topic;
+    const level = reviewLevel(group.priority);
+    const days = daysSince(group.lastTestedAt);
+    return `
+      <article class="card review-card">
+        <div class="review-rank">${index + 1}</div>
+        <div class="review-content">
+          <div class="review-heading-row">
+            <div>
+              <p class="history-subject">${escapeHtml(topic.subject || "과목 정보 없음")} · ${escapeHtml(topic.grade ? `${topic.grade}급` : "등급 정보 없음")}</p>
+              <h3>${escapeHtml(topic.number || "")} ${escapeHtml(topic.title || "논점 정보 없음")}</h3>
+            </div>
+            <span class="review-level">${level.label}</span>
+          </div>
+          <p class="review-stars" aria-label="복습 우선순위 ${level.label}">${level.stars}</p>
+          <p class="review-reason">${escapeHtml(reviewReason(group))}</p>
+          <div class="review-metrics">
+            <div><span>최근 정답률</span><strong>${group.recentAccuracy}%</strong></div>
+            <div><span>미학습 기간</span><strong>${days === 0 ? "오늘" : `${days}일`}</strong></div>
+            <div><span>시험 횟수</span><strong>${group.records.length}회</strong></div>
+          </div>
+          <button class="primary-button review-start-btn" type="button" data-topic-key="${escapeHtml(group.key)}">이 논점 시험 시작</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  list.querySelectorAll(".review-start-btn").forEach(button => {
+    button.addEventListener("click", () => startRecommendedTopic(button.dataset.topicKey));
+  });
+}
+
+function startRecommendedTopic(key) {
+  const group = groupRecordsByTopic().find(item => item.key === key);
+  if (!group) return;
+  const topic = topics.find(item =>
+    item.subject === group.topic.subject &&
+    item.number === group.topic.number &&
+    item.title === group.topic.title
+  );
+  if (!topic) {
+    window.alert("현재 시험 데이터에서 이 논점을 찾지 못했습니다.");
+    return;
+  }
+  const latestRange = group.records[0]?.range;
+  state.settings = {
+    subjects: [topic.subject],
+    grades: [topic.grade],
+    range: latestRange === "목차 전체" ? "목차 전체" : "모든 내용"
+  };
+  loadTopic(topic);
 }
 
 function renderStatisticsList() {
@@ -622,9 +737,11 @@ function nextTopic() {
 document.getElementById("goSettingsBtn").addEventListener("click", () => showScreen("settings"));
 document.getElementById("historyBtn").addEventListener("click", openHistory);
 document.getElementById("statisticsBtn").addEventListener("click", openStatistics);
+document.getElementById("reviewBtn").addEventListener("click", openReview);
 document.getElementById("historyBackBtn").addEventListener("click", () => showScreen("home"));
 document.getElementById("detailBackBtn").addEventListener("click", openHistory);
 document.getElementById("statisticsBackBtn").addEventListener("click", () => showScreen("home"));
+document.getElementById("reviewBackBtn").addEventListener("click", () => showScreen("home"));
 document.getElementById("statisticsDetailBackBtn").addEventListener("click", openStatistics);
 document.getElementById("startBtn").addEventListener("click", startTest);
 document.getElementById("revealBtn").addEventListener("click", openAnswerPanel);
