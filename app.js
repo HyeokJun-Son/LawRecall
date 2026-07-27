@@ -4,6 +4,9 @@ const DB = window.MASTER_DB || { subjects: [], chapters: [], topics: [] };
 const topics = DB.topics || [];
 const chapters = DB.chapters || [];
 const STORAGE_KEY = "lawRecallGradingRecords";
+const PDF_MAPPING = window.PDF_MAPPING || { documents: [], blocks: [] };
+let currentDetailRecord = null;
+let detailFilter = "all";
 
 const screens = {
   home: document.getElementById("homeScreen"),
@@ -335,19 +338,64 @@ function renderHistoryList() {
   document.querySelectorAll(".history-delete-button").forEach(btn => btn.addEventListener("click", () => deleteHistoryRecord(btn.dataset.recordId)));
 }
 
+function mappingForItem(topicId, itemId) {
+  return (PDF_MAPPING.blocks || []).filter(block => block.topic_id === topicId && block.outline_id === itemId)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+
+function detailItemIsWrong(item) {
+  return item.outlineCorrect === false || item.bodyCorrect === false;
+}
+
+function renderHistoryDetail() {
+  const record = currentDetailRecord;
+  if (!record) return;
+  const items = (record.items || []).filter(item => detailFilter === "all" || detailItemIsWrong(item));
+  document.getElementById("detailShowAllBtn").classList.toggle("active", detailFilter === "all");
+  document.getElementById("detailShowWrongBtn").classList.toggle("active", detailFilter === "wrong");
+  const container = document.getElementById("historyDetail");
+  if (!items.length) {
+    container.innerHTML = '<div class="card empty-state">X로 채점한 항목이 없습니다.</div>';
+    return;
+  }
+  container.innerHTML = items.map((item, index) => {
+    const blocks = mappingForItem(record.topic?.topicId, item.itemId);
+    const bodyEnabled = typeof item.bodyCorrect === "boolean";
+    const mappingText = blocks.length
+      ? blocks.map(block => `${escapeHtml(block.document_id)} · ${block.page}p · 영역 ${escapeHtml(block.block_id)}`).join(" / ")
+      : `매핑 키: ${escapeHtml(record.topic?.topicId || "-")} / ${escapeHtml(item.itemId || "-")}`;
+    return `
+      <article class="card review-detail-item ${detailItemIsWrong(item) ? "has-wrong" : "all-correct"}">
+        <div class="review-detail-heading">
+          <div class="outline-sequence">${index + 1}</div>
+          <h3>${escapeHtml(item.outlineText)}</h3>
+          <span class="result-pill ${item.outlineCorrect ? "correct" : "wrong"}">목차 ${item.outlineCorrect ? "O" : "X"}</span>
+        </div>
+        ${bodyEnabled ? `
+          <div class="body-answer-block">
+            <div class="body-answer-topline">
+              <strong>해당 목차의 줄글 원문</strong>
+              <span class="result-pill ${item.bodyCorrect ? "correct" : "wrong"}">줄글 ${item.bodyCorrect ? "O" : "X"}</span>
+            </div>
+            <div class="pdf-region-placeholder">
+              <span class="pdf-label">PDF 영역</span>
+              <p>이 자리에 PDF에서 잘라낸 해당 목차의 줄글 부분이 표시됩니다.</p>
+              <small>${mappingText}</small>
+            </div>
+          </div>` : `
+          <div class="outline-only-note">이번 기록은 ‘목차 전체’ 범위로 시험했습니다.</div>`}
+      </article>`;
+  }).join("");
+}
+
 function openHistoryDetail(recordId) {
   const record = getSavedRecords().find(item => item.id === recordId);
   if (!record) return openHistory();
+  currentDetailRecord = record;
+  detailFilter = "all";
   document.getElementById("detailTitle").textContent = `${record.topic?.number} ${record.topic?.title}`;
   document.getElementById("detailMeta").textContent = `${record.topic?.subject} · ${record.topic?.chapter || ""} · ${record.range} · ${formatTestedAt(record.testedAt)}`;
-  document.getElementById("historyDetail").innerHTML = (record.items || []).map(item => `
-    <div class="detail-item">
-      <strong>${escapeHtml(item.outlineText)}</strong>
-      <div class="detail-badges">
-        <span class="result-pill ${item.outlineCorrect ? "correct" : "wrong"}">목차 ${item.outlineCorrect ? "O" : "X"}</span>
-        ${typeof item.bodyCorrect === "boolean" ? `<span class="result-pill ${item.bodyCorrect ? "correct" : "wrong"}">줄글 ${item.bodyCorrect ? "O" : "X"}</span>` : ""}
-      </div>
-    </div>`).join("");
+  renderHistoryDetail();
   showScreen("historyDetail");
 }
 
@@ -531,6 +579,8 @@ document.getElementById("statisticsBtn").addEventListener("click", openStatistic
 document.getElementById("reviewBtn").addEventListener("click", openReview);
 document.getElementById("historyBackBtn").addEventListener("click", () => showScreen("home"));
 document.getElementById("detailBackBtn").addEventListener("click", openHistory);
+document.getElementById("detailShowAllBtn").addEventListener("click", () => { detailFilter = "all"; renderHistoryDetail(); });
+document.getElementById("detailShowWrongBtn").addEventListener("click", () => { detailFilter = "wrong"; renderHistoryDetail(); });
 document.getElementById("statisticsBackBtn").addEventListener("click", () => showScreen("home"));
 document.getElementById("reviewBackBtn").addEventListener("click", () => showScreen("home"));
 document.getElementById("statisticsDetailBackBtn").addEventListener("click", openStatistics);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Law Recall v1.0.1</title>
+  <title>Law Recall v1.1</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="topbar">
       <div>
         <h1>Law Recall</h1>
-        <p class="version">v1.0.1 · Master DB 연동</p>
+        <p class="version">v1.1 · 복습 상세 화면 시제품</p>
       </div>
       <button id="homeBtn" class="ghost-button" type="button">처음으로</button>
     </header>
@@ -139,7 +139,17 @@
           </div>
           <button id="detailBackBtn" class="ghost-button" type="button">목록으로</button>
         </div>
-        <div id="historyDetail" class="card history-detail"></div>
+        <div class="detail-toolbar card">
+          <div>
+            <strong>복습 보기</strong>
+            <span class="helper">목차와 줄글 결과를 한 화면에서 확인합니다.</span>
+          </div>
+          <div class="detail-filter-buttons" role="group" aria-label="복습 필터">
+            <button id="detailShowAllBtn" class="filter-button active" type="button">모두 보기</button>
+            <button id="detailShowWrongBtn" class="filter-button" type="button">X만 보기</button>
+          </div>
+        </div>
+        <div id="historyDetail" class="history-detail"></div>
       </div>
     </section>
 
@@ -198,6 +208,7 @@
   </main>
 
   <script src="master-db.js"></script>
+  <script src="pdf-mapping.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
