@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Law Recall v1.2</title>
+  <title>Law Recall v1.3</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="topbar">
       <div>
         <h1>Law Recall</h1>
-        <p class="version">v1.2 · 출제 논점 수 및 세션 진행</p>
+        <p class="version">v1.3 · 시험 종료 및 틀린 논점 복습</p>
       </div>
       <button id="homeBtn" class="ghost-button" type="button">처음으로</button>
     </header>
@@ -89,6 +89,7 @@
 
     <section id="questionScreen" class="screen">
       <div class="topic-header card">
+        <div class="progress-track" role="progressbar" aria-label="시험 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="sessionProgressBar"></span></div>
         <div class="topic-meta">
           <span id="progressBadge" class="badge progress-badge"></span>
           <span id="subjectBadge" class="badge"></span>
@@ -203,6 +204,21 @@
           <button id="statisticsDetailBackBtn" class="ghost-button" type="button">목록으로</button>
         </div>
         <div id="statisticsDetail" class="card statistics-detail"></div>
+      </div>
+    </section>
+
+
+    <section id="sessionCompleteScreen" class="screen">
+      <div class="card session-complete-card">
+        <div class="completion-mark" aria-hidden="true">✓</div>
+        <h2>시험 종료</h2>
+        <p class="helper center">이번 시험의 전체 결과입니다.</p>
+        <div id="sessionCompleteSummary" class="session-complete-summary"></div>
+        <div class="session-complete-actions">
+          <button id="reviewWrongBtn" class="primary-button large" type="button">틀린 논점 복습</button>
+          <button id="repeatSameBtn" class="secondary-button large" type="button">같은 조건으로 다시 시험</button>
+          <button id="sessionHomeBtn" class="ghost-button large" type="button">메인으로</button>
+        </div>
       </div>
     </section>
 

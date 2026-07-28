@@ -17,7 +17,8 @@ const screens = {
   statistics: document.getElementById("statisticsScreen"),
   review: document.getElementById("reviewScreen"),
   statisticsDetail: document.getElementById("statisticsDetailScreen"),
-  result: document.getElementById("resultScreen")
+  result: document.getElementById("resultScreen"),
+  sessionComplete: document.getElementById("sessionCompleteScreen")
 };
 
 const state = {
@@ -26,7 +27,9 @@ const state = {
   grades: {},
   savedRecordId: null,
   sessionTopics: [],
-  sessionIndex: 0
+  sessionIndex: 0,
+  sessionResults: [],
+  sessionMode: "normal"
 };
 
 function showScreen(name) {
@@ -120,6 +123,12 @@ function updateSessionProgress() {
   const total = state.sessionTopics.length || 1;
   const current = Math.min(state.sessionIndex + 1, total);
   document.getElementById("progressBadge").textContent = `${current} / ${total}`;
+  const percent = Math.round((current / total) * 100);
+  const bar = document.getElementById("sessionProgressBar");
+  if (bar) {
+    bar.style.width = `${percent}%`;
+    bar.parentElement.setAttribute("aria-valuenow", String(percent));
+  }
 }
 
 function useAllQuestionCount() {
@@ -146,6 +155,8 @@ function startTest() {
   state.settings = { ...settings, questionCount: actualCount };
   state.sessionTopics = shuffled(pool).slice(0, actualCount);
   state.sessionIndex = 0;
+  state.sessionResults = [];
+  state.sessionMode = "normal";
   loadTopic(state.sessionTopics[0]);
 }
 
@@ -535,6 +546,8 @@ function startRecommendedTopic(key) {
   };
   state.sessionTopics = [topic];
   state.sessionIndex = 0;
+  state.sessionResults = [];
+  state.sessionMode = "recommended";
   loadTopic(topic);
 }
 
@@ -585,6 +598,11 @@ function completeGrading() {
     if (state.settings.range === "모든 내용") item.body ? bodyO++ : bodyX++;
   });
   const saveResult = saveCurrentGrading();
+  const hasWrong = outlineX > 0 || bodyX > 0;
+  state.sessionResults[state.sessionIndex] = {
+    topic: state.topic,
+    outlineO, outlineX, bodyO, bodyX, hasWrong
+  };
   document.getElementById("resultSummary").innerHTML = `
     <div class="summary-box">목차 O<strong>${outlineO}</strong></div>
     <div class="summary-box">목차 X<strong>${outlineX}</strong></div>
@@ -593,19 +611,74 @@ function completeGrading() {
   message.className = saveResult.saved ? "save-message success" : "save-message error";
   message.textContent = saveResult.saved ? `채점 결과가 이 기기에 저장되었습니다. 누적 ${saveResult.count}회` : "채점 결과를 저장하지 못했습니다.";
   const isLast = state.sessionIndex >= state.sessionTopics.length - 1;
-  document.getElementById("nextBtn").textContent = isLast ? "시험 종료" : `다음 논점 (${state.sessionIndex + 2}/${state.sessionTopics.length})`;
+  document.getElementById("nextBtn").textContent = isLast ? "시험 결과 보기" : `다음 논점 (${state.sessionIndex + 2}/${state.sessionTopics.length})`;
   showScreen("result");
+}
+
+function sessionTotals() {
+  return state.sessionResults.reduce((totals, result) => {
+    if (!result) return totals;
+    totals.outlineO += result.outlineO;
+    totals.outlineX += result.outlineX;
+    totals.bodyO += result.bodyO;
+    totals.bodyX += result.bodyX;
+    if (result.hasWrong) totals.wrongTopics += 1;
+    return totals;
+  }, { outlineO: 0, outlineX: 0, bodyO: 0, bodyX: 0, wrongTopics: 0 });
+}
+
+function accuracy(correct, wrong) {
+  const total = correct + wrong;
+  return total ? Math.round(correct / total * 100) : 0;
+}
+
+function showSessionComplete() {
+  const totals = sessionTotals();
+  const bodyEnabled = state.settings.range === "모든 내용";
+  document.getElementById("sessionCompleteSummary").innerHTML = `
+    <div class="session-stat primary-stat"><span>출제 논점</span><strong>${state.sessionTopics.length}개</strong></div>
+    <div class="session-stat"><span>목차 정답률</span><strong>${accuracy(totals.outlineO, totals.outlineX)}%</strong></div>
+    ${bodyEnabled ? `<div class="session-stat"><span>줄글 정답률</span><strong>${accuracy(totals.bodyO, totals.bodyX)}%</strong></div>` : ""}
+    <div class="session-stat wrong-stat"><span>틀린 논점</span><strong>${totals.wrongTopics}개</strong></div>`;
+  const reviewBtn = document.getElementById("reviewWrongBtn");
+  reviewBtn.disabled = totals.wrongTopics === 0;
+  reviewBtn.textContent = totals.wrongTopics ? `틀린 논점 ${totals.wrongTopics}개 복습` : "틀린 논점 없음";
+  showScreen("sessionComplete");
 }
 
 function nextTopic() {
   if (state.sessionIndex >= state.sessionTopics.length - 1) {
-    state.sessionTopics = [];
-    state.sessionIndex = 0;
     updateStoredCount();
-    return showScreen("home");
+    return showSessionComplete();
   }
   state.sessionIndex += 1;
   loadTopic(state.sessionTopics[state.sessionIndex]);
+}
+
+function restartSameConditions() {
+  const pool = topicPool(state.settings);
+  state.sessionTopics = shuffled(pool).slice(0, state.settings.questionCount);
+  state.sessionIndex = 0;
+  state.sessionResults = [];
+  state.sessionMode = "repeat";
+  loadTopic(state.sessionTopics[0]);
+}
+
+function reviewWrongTopics() {
+  const wrongTopics = state.sessionResults.filter(result => result?.hasWrong).map(result => result.topic);
+  if (!wrongTopics.length) return;
+  state.sessionTopics = wrongTopics;
+  state.sessionIndex = 0;
+  state.sessionResults = [];
+  state.sessionMode = "wrong-review";
+  loadTopic(state.sessionTopics[0]);
+}
+
+function endSessionToHome() {
+  state.sessionTopics = [];
+  state.sessionResults = [];
+  state.sessionIndex = 0;
+  showScreen("home");
 }
 
 function toggleAllChapters() {
@@ -641,6 +714,13 @@ document.getElementById("closeAnswerBtn").addEventListener("click", closeAnswerP
 document.getElementById("completeBtn").addEventListener("click", completeGrading);
 document.getElementById("nextBtn").addEventListener("click", nextTopic);
 document.getElementById("backSettingsBtn").addEventListener("click", () => showScreen("settings"));
-document.getElementById("homeBtn").addEventListener("click", () => showScreen("home"));
+document.getElementById("homeBtn").addEventListener("click", () => {
+  const inActiveTest = ["question", "result"].some(name => screens[name].classList.contains("active")) && state.sessionTopics.length;
+  if (inActiveTest && !confirm("진행 중인 시험을 종료하고 처음으로 돌아갈까요?")) return;
+  endSessionToHome();
+});
+document.getElementById("reviewWrongBtn").addEventListener("click", reviewWrongTopics);
+document.getElementById("repeatSameBtn").addEventListener("click", restartSameConditions);
+document.getElementById("sessionHomeBtn").addEventListener("click", endSessionToHome);
 
 updateStoredCount();
