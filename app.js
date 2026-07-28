@@ -197,17 +197,46 @@ function scoreRow(itemId, type, label) {
     </div>`;
 }
 
+function koreanSequence(number) {
+  const letters = ["가", "나", "다", "라", "마", "바", "사", "아", "자", "차", "카", "타", "파", "하"];
+  return letters[number - 1] || `${number}`;
+}
+
+function outlineMarker(level, siblingNumber) {
+  if (level === 1) return `${siblingNumber}.`;
+  if (level === 2) return `(${siblingNumber})`;
+  if (level === 3) return `${siblingNumber})`;
+  if (level === 4) return `${koreanSequence(siblingNumber)}.`;
+  return `${siblingNumber}.`;
+}
+
+function numberedTopicItems(items) {
+  const siblingCounts = new Map();
+  return items.map(item => {
+    const key = `${item.parentId || "ROOT"}|${item.level}`;
+    const siblingNumber = (siblingCounts.get(key) || 0) + 1;
+    siblingCounts.set(key, siblingNumber);
+    return { ...item, marker: outlineMarker(item.level, siblingNumber) };
+  });
+}
+
 function renderGradingList() {
   const bodyEnabled = state.settings.range === "모든 내용";
-  document.getElementById("gradingList").innerHTML = state.topic.items.map(item => `
-    <article class="grading-item" data-level="${item.level}">
-      <h4 class="outline-title level-${item.level}" style="--outline-level:${item.level}">
-        <span class="level-chip">${item.level}수준</span>${escapeHtml(item.outline)}
-      </h4>
-      ${scoreRow(item.id, "outline", "목차")}
+  const numberedItems = numberedTopicItems(state.topic.items);
+  document.getElementById("gradingList").innerHTML = numberedItems.map(item => `
+    <article class="grading-item level-${item.level}" data-level="${item.level}" style="--outline-level:${item.level}">
+      <div class="outline-block">
+        <h4 class="outline-title">
+          <span class="outline-marker">${escapeHtml(item.marker)}</span>
+          <span class="outline-text">${escapeHtml(item.outline)}</span>
+        </h4>
+        ${scoreRow(item.id, "outline", "목차")}
+      </div>
       ${bodyEnabled ? `
-        <p class="model-body pending-body">줄글 원문은 v1.1 PDF 연동 예정입니다. 현재는 기본서 또는 PDF와 비교한 뒤 직접 채점하세요.</p>
-        ${scoreRow(item.id, "body", "줄글")}
+        <div class="body-block">
+          <p class="model-body pending-body">줄글 원문은 v1.1 PDF 연동 예정입니다. 현재는 기본서 또는 PDF와 비교한 뒤 직접 채점하세요.</p>
+          ${scoreRow(item.id, "body", "줄글")}
+        </div>
       ` : ""}
     </article>`).join("");
 

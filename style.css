@@ -992,3 +992,57 @@ h1 { margin-bottom: 3px; font-size: 1.55rem; }
   .session-complete-card { margin-top: 0; padding: 24px 18px; }
   .session-complete-summary { grid-template-columns: 1fr; }
 }
+
+/* v1.3.1 — fixed legal-outline hierarchy in grading view */
+.grading-item {
+  --level-indent: clamp(24px, 2.5vw, 42px);
+  padding-left: calc((var(--outline-level) - 1) * var(--level-indent));
+}
+
+.outline-block,
+.body-block {
+  min-width: 0;
+}
+
+.outline-title {
+  display: grid;
+  grid-template-columns: 2.8rem minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  margin-bottom: 12px;
+  font-weight: 800;
+}
+
+.outline-marker {
+  white-space: nowrap;
+  font-weight: 900;
+  text-align: right;
+}
+
+.outline-text {
+  min-width: 0;
+}
+
+.body-block {
+  margin-left: var(--level-indent);
+  margin-top: 14px;
+}
+
+.body-block .model-body {
+  margin-bottom: 12px;
+}
+
+.level-chip {
+  display: none !important;
+}
+
+@media (max-width: 560px) {
+  .grading-item {
+    --level-indent: 20px;
+  }
+
+  .outline-title {
+    grid-template-columns: 2.35rem minmax(0, 1fr);
+    gap: 6px;
+  }
+}
