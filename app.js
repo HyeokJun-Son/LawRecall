@@ -11,7 +11,9 @@ const state = {
   issueTitle: '',
   answer: '',
   result: { outline: null, prose: null },
-  wrongIssues: []
+  wrongIssues: [],
+  completedCount: 0,
+  sessionResults: []
 };
 
 function escapeHtml(value = '') {
@@ -262,6 +264,9 @@ function startTest() {
   state.issueTitle = '';
   state.answer = '';
   state.result = { outline: null, prose: null };
+  state.completedCount = 0;
+  state.sessionResults = [];
+  state.wrongIssues = [];
   renderAnswer();
 }
 
@@ -282,7 +287,10 @@ function renderAnswer() {
   const pdfFile = currentPdfFile();
   pageShell(`
     <section class="test-meta card compact">
-      <div class="tag-row">${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
+      <div>
+        <div class="progress-label">${state.completedCount + 1}번째 논점</div>
+        <div class="tag-row">${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
+      </div>
       <div class="pdf-name">원문: <strong>${escapeHtml(pdfFile.name)}</strong></div>
     </section>
 
@@ -407,6 +415,13 @@ function finishJudgement() {
   if (isWrong && !state.wrongIssues.includes(state.issueTitle.trim())) {
     state.wrongIssues.push(state.issueTitle.trim());
   }
+  state.completedCount += 1;
+  state.sessionResults.push({
+    issueTitle: state.issueTitle.trim(),
+    outline: state.result.outline,
+    prose: state.result.prose,
+    isWrong
+  });
   renderResult(isWrong);
 }
 
@@ -425,9 +440,37 @@ function renderResult(isWrong) {
       </div>
 
       <button class="primary large" onclick="newIssue()">다음 논점 작성</button>
-      <button class="secondary" onclick="renderSetup()">시험 설정으로 돌아가기</button>
+      <button class="secondary large" onclick="renderSessionSummary()">시험 종료</button>
     </section>
   `, { title: '시험 결과', subtitle: isWrong ? '오답 논점 전체 재출제 원칙 적용' : '직접 판정 완료' });
+}
+
+
+function renderSessionSummary() {
+  const total = state.sessionResults.length;
+  const wrong = state.sessionResults.filter(item => item.isWrong).length;
+  const correct = total - wrong;
+  const rate = total ? Math.round((correct / total) * 100) : 0;
+
+  pageShell(`
+    <section class="card result-card">
+      <p class="eyebrow">현재 시험 요약</p>
+      <h2>${total}개 논점 완료</h2>
+      <p>이 결과는 현재 브라우저 세션에서만 확인하는 임시 요약입니다.</p>
+      <div class="result-summary">
+        <div><span>정답 논점</span><strong>${correct}개</strong></div>
+        <div><span>오답 논점</span><strong>${wrong}개</strong></div>
+        <div><span>정답률</span><strong>${rate}%</strong></div>
+      </div>
+      ${total ? `<div class="session-list">${state.sessionResults.map((item, index) => `
+        <div class="session-row">
+          <div><span>${index + 1}</span><strong>${escapeHtml(item.issueTitle)}</strong></div>
+          <b class="${item.isWrong ? 'wrong-text' : 'correct-text'}">${item.isWrong ? 'X' : 'O'}</b>
+        </div>`).join('')}</div>` : ''}
+      <button class="primary large" onclick="startTest()">새 시험 시작</button>
+      <button class="secondary large" onclick="renderMain()">메인으로</button>
+    </section>
+  `, { title: '시험 종료', subtitle: '현재 시험 결과를 확인합니다.' });
 }
 
 function newIssue() {

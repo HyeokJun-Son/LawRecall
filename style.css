@@ -193,3 +193,15 @@ button:active, .link-button:active { transform: translateY(1px); }
   .pdf-library-actions .pdf-register-button { flex: 1; }
   .source-selector { align-items: flex-start; flex-direction: column; }
 }
+
+
+.progress-label { margin-bottom: 9px; color: var(--muted); font-size: 13px; font-weight: 800; }
+.session-list { margin: 4px 0 22px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; text-align: left; }
+.session-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-top: 1px solid var(--line); }
+.session-row:first-child { border-top: 0; }
+.session-row > div { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.session-row span { display: grid; place-items: center; width: 26px; height: 26px; flex: 0 0 auto; border-radius: 50%; background: #eef1f5; color: var(--muted); font-size: 12px; font-weight: 800; }
+.session-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.correct-text { color: var(--success); }
+.wrong-text { color: var(--danger); }
+.result-card .large + .large { margin-top: 10px; }
