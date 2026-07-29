@@ -170,3 +170,26 @@ button:active, .link-button:active { transform: translateY(1px); }
   .info-row { flex-direction: column; gap: 5px; }
   .info-row strong { text-align: left; }
 }
+
+.pdf-library { display: grid; gap: 10px; }
+.pdf-library-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 14px 15px; border: 1px solid var(--line); border-radius: 15px; background: #fafbfc;
+}
+.pdf-library-row.registered { border-color: #b8c9f6; background: var(--soft); }
+.pdf-library-copy { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.pdf-library-copy small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-library-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.pdf-register-button { cursor: pointer; }
+.pdf-register-button input { display: none; }
+.text-danger { background: transparent; color: var(--danger); padding-left: 8px; padding-right: 8px; }
+.source-selector { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.source-chip { padding: 8px 11px; border: 1px solid var(--line); background: white; color: var(--text); font-size: 12px; }
+.source-chip.selected { border-color: var(--primary); background: var(--soft); color: var(--primary); }
+
+@media (max-width: 640px) {
+  .pdf-library-row { align-items: flex-start; flex-direction: column; }
+  .pdf-library-actions { width: 100%; }
+  .pdf-library-actions .pdf-register-button { flex: 1; }
+  .source-selector { align-items: flex-start; flex-direction: column; }
+}

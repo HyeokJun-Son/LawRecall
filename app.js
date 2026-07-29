@@ -5,8 +5,9 @@ const state = {
   categories: new Set(['행정법']),
   grades: new Set(['A']),
   scope: '목차 전체',
-  pdfFile: null,
-  pdfUrl: null,
+  pdfFiles: {},
+  pdfUrls: {},
+  activePdfCategory: '행정법',
   issueTitle: '',
   answer: '',
   result: { outline: null, prose: null },
@@ -19,9 +20,83 @@ function escapeHtml(value = '') {
   }[char]));
 }
 
-function revokePdfUrl() {
-  if (state.pdfUrl) URL.revokeObjectURL(state.pdfUrl);
-  state.pdfUrl = null;
+const PDF_CATEGORIES = ['행정법', '토지보상법', '부동산공시법', '감정평가법'];
+const DB_NAME = 'LawRecallDB';
+const DB_VERSION = 1;
+const PDF_STORE = 'pdfFiles';
+
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(PDF_STORE)) db.createObjectStore(PDF_STORE, { keyPath: 'category' });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function loadSavedPdfs() {
+  try {
+    const db = await openDb();
+    const records = await new Promise((resolve, reject) => {
+      const tx = db.transaction(PDF_STORE, 'readonly');
+      const req = tx.objectStore(PDF_STORE).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+    records.forEach(record => { state.pdfFiles[record.category] = record.file; });
+    db.close();
+  } catch (error) {
+    console.error('저장된 PDF를 불러오지 못했습니다.', error);
+  }
+}
+
+async function savePdf(category, file) {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(PDF_STORE, 'readwrite');
+    tx.objectStore(PDF_STORE).put({ category, file, savedAt: Date.now() });
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+async function deletePdf(category) {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(PDF_STORE, 'readwrite');
+    tx.objectStore(PDF_STORE).delete(category);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+  if (state.pdfUrls[category]) URL.revokeObjectURL(state.pdfUrls[category]);
+  delete state.pdfUrls[category];
+  delete state.pdfFiles[category];
+  renderSetup();
+}
+
+function revokePdfUrls() {
+  Object.values(state.pdfUrls).forEach(url => URL.revokeObjectURL(url));
+  state.pdfUrls = {};
+}
+
+function getPdfUrl(category) {
+  const file = state.pdfFiles[category];
+  if (!file) return null;
+  if (!state.pdfUrls[category]) state.pdfUrls[category] = URL.createObjectURL(file);
+  return state.pdfUrls[category];
+}
+
+function currentPdfFile() {
+  return state.pdfFiles[state.activePdfCategory] || null;
+}
+
+function currentPdfUrl() {
+  return getPdfUrl(state.activePdfCategory);
 }
 
 function chip(label, selected, onClick, extraClass = '') {
@@ -56,9 +131,9 @@ function renderMain() {
     </section>
     <section class="card compact info-card">
       <h3>현재 방식</h3>
-      <div class="info-row"><span>원문</span><strong>기기에서 직접 선택한 PDF</strong></div>
+      <div class="info-row"><span>원문</span><strong>과목별로 한 번 등록한 PDF</strong></div>
       <div class="info-row"><span>채점</span><strong>자동채점 없이 직접 O/X</strong></div>
-      <div class="info-row"><span>저장</span><strong>PDF는 서버에 업로드하지 않음</strong></div>
+      <div class="info-row"><span>저장</span><strong>기기 브라우저에만 보관</strong></div>
     </section>
   `, { title: '' });
 }
@@ -84,7 +159,7 @@ function selectScope(scope) {
   renderSetup();
 }
 
-function handlePdfFile(input) {
+async function handlePdfFile(input, category) {
   const file = input.files && input.files[0];
   if (!file) return;
   if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -92,10 +167,33 @@ function handlePdfFile(input) {
     input.value = '';
     return;
   }
-  revokePdfUrl();
-  state.pdfFile = file;
-  state.pdfUrl = URL.createObjectURL(file);
-  renderSetup();
+  try {
+    if (state.pdfUrls[category]) URL.revokeObjectURL(state.pdfUrls[category]);
+    delete state.pdfUrls[category];
+    await savePdf(category, file);
+    state.pdfFiles[category] = file;
+    renderSetup();
+  } catch (error) {
+    console.error(error);
+    alert('PDF를 기기에 저장하지 못했습니다. 브라우저 저장공간 권한을 확인하세요.');
+  }
+}
+
+function pdfLibraryCard(category) {
+  const file = state.pdfFiles[category];
+  return `<div class="pdf-library-row ${file ? 'registered' : ''}">
+    <div class="pdf-library-copy">
+      <strong>${category}</strong>
+      <small>${file ? `${escapeHtml(file.name)} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : '등록된 PDF 없음'}</small>
+    </div>
+    <div class="pdf-library-actions">
+      <label class="secondary small pdf-register-button">
+        ${file ? '변경' : '등록'}
+        <input type="file" accept="application/pdf,.pdf" onchange="handlePdfFile(this,'${category}')">
+      </label>
+      ${file ? `<button type="button" class="text-danger small" onclick="deletePdf('${category}')">삭제</button>` : ''}
+    </div>
+  </div>`;
 }
 
 function renderSetup() {
@@ -143,29 +241,24 @@ function renderSetup() {
       </div>
 
       <div class="section-block">
-        <div class="section-heading"><h2>원문 PDF</h2><span>기기 내부에서만 사용</span></div>
-        <label class="file-picker ${state.pdfFile ? 'has-file' : ''}">
-          <input type="file" accept="application/pdf,.pdf" onchange="handlePdfFile(this)">
-          <span class="file-icon">PDF</span>
-          <span class="file-copy">
-            <strong>${state.pdfFile ? escapeHtml(state.pdfFile.name) : 'PDF 파일 선택'}</strong>
-            <small>${state.pdfFile ? `${(state.pdfFile.size / 1024 / 1024).toFixed(1)} MB · 다시 누르면 변경` : '보유한 원문 PDF를 선택하세요'}</small>
-          </span>
-        </label>
-        <p class="privacy-note">선택한 PDF는 브라우저에서만 열리며 GitHub나 외부 서버로 전송하지 않습니다.</p>
+        <div class="section-heading"><h2>과목별 원문 PDF</h2><span>최초 1회 등록</span></div>
+        <div class="pdf-library">${PDF_CATEGORIES.map(pdfLibraryCard).join('')}</div>
+        <p class="privacy-note">등록한 PDF는 이 기기의 현재 브라우저 저장공간에 보관됩니다. GitHub나 외부 서버로 전송되지 않으며, 브라우저 데이터 삭제 시 다시 등록해야 합니다.</p>
       </div>
 
-      <button class="primary large" onclick="startTest()" ${state.pdfFile ? '' : 'disabled'}>시험 시작</button>
-      ${!state.pdfFile ? '<p class="validation-note">시험을 시작하려면 원문 PDF를 먼저 선택하세요.</p>' : ''}
+      ${(() => { const missing=[...state.categories].filter(c=>!state.pdfFiles[c]); return `<button class="primary large" onclick="startTest()" ${missing.length ? 'disabled' : ''}>시험 시작</button>${missing.length ? `<p class="validation-note">선택한 과목의 PDF를 먼저 등록하세요: ${missing.join(', ')}</p>` : ''}`; })()}
     </section>
   `, { backAction: 'renderMain()', title: '시험 설정', subtitle: '원문 PDF를 기준으로 직접 비교합니다.' });
 }
 
 function startTest() {
-  if (!state.pdfFile || !state.pdfUrl) {
-    alert('원문 PDF를 먼저 선택하세요.');
+  const selected = [...state.categories];
+  const missing = selected.filter(category => !state.pdfFiles[category]);
+  if (missing.length) {
+    alert(`선택한 과목의 PDF를 먼저 등록하세요: ${missing.join(', ')}`);
     return;
   }
+  if (!selected.includes(state.activePdfCategory)) state.activePdfCategory = selected[0];
   state.issueTitle = '';
   state.answer = '';
   state.result = { outline: null, prose: null };
@@ -179,13 +272,21 @@ function persistDraft() {
   if (answer) state.answer = answer.value;
 }
 
+function setActivePdfCategory(category) {
+  state.activePdfCategory = category;
+  renderAnswer();
+}
+
 function renderAnswer() {
   const tags = [state.mode, ...state.categories, ...[...state.grades].map(g => `${g}급`), state.scope];
+  const pdfFile = currentPdfFile();
   pageShell(`
     <section class="test-meta card compact">
       <div class="tag-row">${tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
-      <div class="pdf-name">원문: <strong>${escapeHtml(state.pdfFile.name)}</strong></div>
+      <div class="pdf-name">원문: <strong>${escapeHtml(pdfFile.name)}</strong></div>
     </section>
+
+    ${state.categories.size > 1 ? `<section class="card compact source-selector"><strong>비교할 원문</strong><div class="tag-row">${[...state.categories].map(c => `<button class="source-chip ${state.activePdfCategory===c?'selected':''}" onclick="setActivePdfCategory('${c}')">${c}</button>`).join('')}</div></section>` : ''}
 
     <section class="card answer-card">
       <label class="field-label" for="issueTitle">현재 논점</label>
@@ -212,16 +313,18 @@ function renderAnswer() {
 
 function openPdfPreview() {
   persistDraft();
+  const pdfFile = currentPdfFile();
+  const pdfUrl = currentPdfUrl();
   pageShell(`
     <section class="pdf-toolbar card compact">
-      <div><strong>${escapeHtml(state.pdfFile.name)}</strong><small> 브라우저 PDF 도구로 페이지 이동·확대 가능</small></div>
+      <div><strong>${escapeHtml(pdfFile.name)}</strong><small> 브라우저 PDF 도구로 페이지 이동·확대 가능</small></div>
       <button class="primary small" onclick="renderAnswer()">답안으로 돌아가기</button>
     </section>
     <section class="pdf-frame-wrap">
-      <object class="pdf-frame" data="${state.pdfUrl}" type="application/pdf">
+      <object class="pdf-frame" data="${pdfUrl}" type="application/pdf">
         <div class="pdf-fallback card">
           <p>이 브라우저에서는 PDF 미리보기를 표시하지 못했습니다.</p>
-          <a class="primary link-button" href="${state.pdfUrl}" target="_blank" rel="noopener">새 창에서 PDF 열기</a>
+          <a class="primary link-button" href="${pdfUrl}" target="_blank" rel="noopener">새 창에서 PDF 열기</a>
         </div>
       </object>
     </section>
@@ -260,6 +363,8 @@ function resultButtons(type, label) {
 }
 
 function renderCompare() {
+  const pdfFile = currentPdfFile();
+  const pdfUrl = currentPdfUrl();
   pageShell(`
     <section class="compare-layout">
       <article class="card answer-panel">
@@ -272,11 +377,11 @@ function renderCompare() {
 
       <article class="card pdf-panel">
         <div class="panel-heading">
-          <div><span class="eyebrow">PDF 원문</span><h2>${escapeHtml(state.pdfFile.name)}</h2></div>
-          <a class="secondary small link-button" href="${state.pdfUrl}" target="_blank" rel="noopener">새 창</a>
+          <div><span class="eyebrow">PDF 원문</span><h2>${escapeHtml(pdfFile.name)}</h2></div>
+          <a class="secondary small link-button" href="${pdfUrl}" target="_blank" rel="noopener">새 창</a>
         </div>
-        <object class="pdf-frame embedded" data="${state.pdfUrl}" type="application/pdf">
-          <div class="pdf-fallback"><a class="primary link-button" href="${state.pdfUrl}" target="_blank" rel="noopener">PDF 열기</a></div>
+        <object class="pdf-frame embedded" data="${pdfUrl}" type="application/pdf">
+          <div class="pdf-fallback"><a class="primary link-button" href="${pdfUrl}" target="_blank" rel="noopener">PDF 열기</a></div>
         </object>
       </article>
     </section>
@@ -332,5 +437,8 @@ function newIssue() {
   renderAnswer();
 }
 
-window.addEventListener('beforeunload', revokePdfUrl);
-renderMain();
+window.addEventListener('beforeunload', revokePdfUrls);
+(async function init() {
+  await loadSavedPdfs();
+  renderMain();
+})();
